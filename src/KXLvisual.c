@@ -371,7 +371,11 @@ void KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event)
   KXL_ReSizeFrame(w, h);
   KXL_Clear_Frame(0, 0, w, h);
   // Auto repeat off
-  XAutoRepeatOff(KXL_Root->Display);
+  XkbSetDetectableAutoRepeat(KXL_Root->Display, True,
+                             &KXL_Root->DetectAutoRepeat);
+  if (!KXL_Root->DetectAutoRepeat) {
+    XAutoRepeatOff(KXL_Root->Display);
+  }
 }
 
 //==============================================================
@@ -384,7 +388,9 @@ void KXL_DeleteWindow(void)
   XFreeGC(KXL_Root->Display, KXL_Root->Frame->Gc);
   KXL_Free(KXL_Root->Frame);
   // Auto repeat on
-  XAutoRepeatOn(KXL_Root->Display);
+  if (!KXL_Root->DetectAutoRepeat) {
+    XAutoRepeatOn(KXL_Root->Display);
+  }
   // Delete font
   XFreeFont(KXL_Root->Display, KXL_Root->WinFont);
   XFreeGC(KXL_Root->Display, KXL_Root->FontGC);

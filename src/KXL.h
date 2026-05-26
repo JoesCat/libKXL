@@ -203,6 +203,7 @@ typedef struct {
   KXL_Frame   *Frame;    // Pointer of frame structure
   GC           FontGC;   // GC of font
   XFontStruct *WinFont;  // Pointer of font structrue
+  Bool         DetectAutoRepeat; // Does the server have detectable auto repeat
 } KXL_Window;
 // RGBE palette
 typedef struct {
