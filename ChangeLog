@@ -1,9 +1,13 @@
-Unreleased Version 1.2.5 [9/9/2023]
+Unreleased Version 1.2.5 [25/5/2026]
 	- KXL_ReadBitmapHeader no longer loops indefinitely on corrupted BMPs.
 	- KXL_LoadBitmap and KXL_ReadBitmapHeader will fail instead of exiting your program.
 	- Documented KXL_ReadBitmapHeader.
 	- Added AFL++ sample.c fuzz target in the test/ directory.
 	- More fuzzing friendly because there are now fewer exit calls.
+	- Merge eight downstream Debian patches: 000_soname_xlibs.diff,
+	    020_64bits.diff, 020_alsa.diff, 020_autorepeat.diff,
+	    020_badfont.diff, 020_headers.diff, 040_nonlinux.diff,
+	    do_not_overrun_display_name_variable.patch
 -------------------------------------------------------------------------------
 Release Version 1.2.4 [30/9/2021]
 	- Fix incompatible pointer type warning.
