@@ -9,7 +9,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <linux/soundcard.h>
+#include <sys/soundcard.h>
 #include <linux/limits.h> // for PATH_MAX
 #ifdef USE_PULSEAUDIO
 #include <pulse/simple.h>
