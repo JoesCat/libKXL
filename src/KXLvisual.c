@@ -449,9 +449,12 @@ void KXL_Font(const char *str, Uint8 r, Uint8 g, Uint8 b)
     }
     KXL_Root->WinFont = XLoadQueryFont(KXL_Root->Display, str);
     if (KXL_Root->WinFont == (XFontStruct *)NULL) {
+      KXL_Root->WinFont = XLoadQueryFont(KXL_Root->Display, "fixed");
+    }
+    if (KXL_Root->WinFont == (XFontStruct *)NULL) {
       fprintf(stderr,
               "KXL error message\n"
-              "loading font error (%s)\n",
+              "loading font error (%s), fallback failed\n",
               str);
       exit(-1);
     }
