@@ -2,8 +2,10 @@
 #define _KXLIB_H_
 
 #include <stdio.h>
+#include <stdint.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/XKBlib.h>
 
 //================================================================
 // Global structures and variables
