@@ -291,10 +291,19 @@ void KXL_InitSound(const char *path, char **fname)
       return;
 #ifndef USE_PULSEAUDIO
   // device check
-  if ((KXL_SoundData.Device = open("/dev/dsp", O_WRONLY)) == -1) {
-    fprintf(stderr, "KXL error message\nnot found sound card\n");
+  // Open the sound device in non-blocking mode, because ALSA's OSS
+  // emulation and some broken OSS drivers would make a blocking call
+  // wait forever until the device is available. Since this breaks the
+  // OSS spec, we immediately put it back to blocking mode if the
+  // operation was successful.
+  KXL_SoundData.Device = open("/dev/dsp", O_WRONLY|O_NDELAY);
+  if (KXL_SoundData.Device < 0) {
+    fprintf(stderr, "KXL error message\ncould not open sound card (%s)\n",
+            strerror(errno));
     return;
   }
+  fcntl(KXL_SoundData.Device, F_SETFL,
+        fcntl(KXL_SoundData.Device, F_GETFL) &~ FNDELAY);
 #endif
   // create pipe
   if (pipe(KXL_SoundData.Pipe) < 0) {
