@@ -4,6 +4,16 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/Quipyowert2/libKXL/badge.svg?branch=master)](https://coveralls.io/github/Quipyowert2/libKXL?branch=master)
 
+KXL (Kacchan X Windows System Library) is a multimedia library targeted at
+game development that provides functions for simple image and sound output
+as well as higher level functions for text drawing, timer and events
+handling and image manipulation.
+
+This package contains the header files and static library needed to
+compile applications that use libkxl
+
+--------------------------------------------------------------------------
+
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
 Free Software Foundation; either version 2 of the License, or (at your
