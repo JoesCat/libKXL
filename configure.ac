@@ -1,10 +1,14 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT([KXL], [1.2.4])
 AC_CONFIG_SRCDIR([src/KXL.h])
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
+
+LT_INIT
+AC_SUBST([LIBTOOL_DEPS])
+
 dnl Checks for programs.
 AC_PROG_CC
-AM_PROG_LIBTOOL
 dnl Checks for libraries.
 
 dnl https://libcheck.github.io/check/
@@ -53,4 +57,6 @@ fi
 
 AM_CONDITIONAL([ENABLE_TEST], [test x"$test" = xyes])
 
-AC_OUTPUT([KXL.spec Makefile src/Makefile docs/Makefile])
+AC_CONFIG_FILES([KXL.spec Makefile src/Makefile docs/Makefile])
+
+AC_OUTPUT
