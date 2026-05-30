@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libkxl
+Description: Kacchan X Windows System Library (KXL) is a simple visual & sound gaming library.
+Version: @VERSION@
+Libs: -L${libdir} -lkxl
+Cflags: -I${includedir}
