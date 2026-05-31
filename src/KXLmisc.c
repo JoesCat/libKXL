@@ -7,7 +7,7 @@
 
 Bool KXL_TimerFlag;
 
-// 360度データ
+// 360 degree data, 360度データ
 static Sint16 sin360[] = {
     0,
     4,    8,   13,   17,   22,   26,   31,   35,   40,   44,
@@ -49,7 +49,7 @@ static Sint16 sin360[] = {
 };
 
 //==============================================================
-//  タイマーフラグ取得
+// Get timer flag, タイマーフラグ取得
 //==============================================================
 Bool KXL_GetTimer(void)
 {
@@ -57,7 +57,7 @@ Bool KXL_GetTimer(void)
 }
 
 //==============================================================
-//  タイマーフラグリセット
+// timer flag reset, タイマーフラグリセット
 //==============================================================
 void KXL_ResetTimer(void)
 {
@@ -65,7 +65,7 @@ void KXL_ResetTimer(void)
 }
 
 //==============================================================
-//  タイマーコールバック
+// timer callback, タイマーコールバック
 //==============================================================
 void KXL_TimerCallBack(int dummy)
 {
@@ -73,8 +73,8 @@ void KXL_TimerCallBack(int dummy)
 }
 
 //==============================================================
-//  タイマー設定
-//  引き数：フレーム数
+// timer settings, タイマー設定
+// Number of frames: 引き数：フレーム数
 //==============================================================
 void KXL_Timer(Uint16 time)
 {
@@ -88,9 +88,9 @@ void KXL_Timer(Uint16 time)
 }
 
 //==============================================================
-//  メモリ確保
-//  引き数：メモリサイズ
-//  戻り値：確保したメモリのポインタ
+// Memory reservation, メモリ確保
+// Arguments: Memory size, 引き数：メモリサイズ
+// Return value: A pointer to allocated memory, 戻り値：確保したメモリのポインタ
 //==============================================================
 void *KXL_Malloc(Uint32 size)
 {
@@ -105,10 +105,10 @@ void *KXL_Malloc(Uint32 size)
 }
 
 //==============================================================
-//  メモリ再確保
-//  引き数：メモリのポインタ
-//        ：メモリサイズ
-//  戻り値：再確保したメモリのポインタ
+// Memory reallocation, メモリ再確保
+// Argument: Pointer to memory, 引き数：メモリのポインタ
+//         : memory size, メモリサイズ
+// Return value: Pointer to reallocated memory, 戻り値：再確保したメモリのポインタ
 //==============================================================
 void *KXL_Realloc(void *src, Uint32 size)
 {
@@ -124,8 +124,8 @@ void *KXL_Realloc(void *src, Uint32 size)
 }
 
 //==============================================================
-//  メモリ解放
-//  引き数：メモリのポインタ
+// Free memory, メモリ解放
+// Argument: Pointer to memory, 引き数：メモリのポインタ
 //==============================================================
 void KXL_Free(void *src)
 {
@@ -133,9 +133,9 @@ void KXL_Free(void *src)
 }
 
 //==============================================================
-//  方角取得
-//  引き数：自分の矩形
-//        ：相手の矩形
+// Get direction, 方角取得
+// Arguments: Your rectangle, 引き数：自分の矩形
+//          : opponent's rectangle, 相手の矩形
 //==============================================================
 Uint16 KXL_GetDirection(KXL_Rect src, KXL_Rect target) {
   Uint16 k, x, y;
@@ -166,10 +166,11 @@ Uint16 KXL_GetDirection(KXL_Rect src, KXL_Rect target) {
 }
 
 //==============================================================
-//  角度による加算値設定
-//  引き数：角度
-//        ：水平加算値のポインタ
-//        ：垂直加算値のポインタ
+// Setting the added value based on angle, 角度による加算値設定
+// Number of draws
+//        : angle, 引き数：角度
+//        : Horizontal Addition Right Pointer, 水平加算値のポインタ
+//        : Vertical Addition Value Pointer, 垂直加算値のポインタ
 //==============================================================
 void KXL_GetDirectionAdd(Sint16 dir, Sint16 *x, Sint16 *y) {
   Sint16 dir2 = dir + 90;
@@ -184,28 +185,27 @@ void KXL_GetDirectionAdd(Sint16 dir, Sint16 *x, Sint16 *y) {
 }
 
 //==============================================================
-//  １６リトルビットエンディアン読み込み
-//  引き数：ファイルポインタ
-//  戻り値：１６ビット値
+// 16-bit little-endian reading, １６リトルビットエンディアン読み込み
+// Arguments: File pointer, 引き数：ファイルポインタ
+// Return value: 16-bit value, 戻り値：１６ビット値
 //==============================================================
 Uint16 KXL_ReadU16(FILE *fp)
 {
-  Uint8 c[2];
+  uint8_t c[2];
 
   fread(c, 1, 2, fp);
   return (Uint16)(c[0] +  c[1] * 0x100);
 }
 
 //==============================================================
-//  ３２ビットリトルエンディアン読み込み
-//  引き数：ファイルポインタ
-//  戻り値：３２ビット値
+// 32-bit little-endian read, ３２ビットリトルエンディアン読み込み
+// Arguments: File pointer, 引き数：ファイルポインタ
+// Return value: 32-bit value, 戻り値：３２ビット値
 //==============================================================
 Uint32 KXL_ReadU32(FILE *fp)
 {
-  Uint8 c[4];
+  uint8_t c[4];
 
   fread(c, 1, 4, fp);
   return (Uint32)(c[0] + c[1] * 0x100L + c[2] * 0x10000L + c[3] * 0x1000000L);
 }
-

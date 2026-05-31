@@ -73,10 +73,10 @@ KXL_Image *KXL_Copy_Image(KXL_Image *src, Uint16 src_l, Uint16 src_t, Uint16 src
   GC gc8, gc1;
   KXL_Image *dest;
 
-  // GC作成
+  // GC creation, GC作成
   KXL_SetGC(src->Buffer, &gc8);
   KXL_SetGC(src->Mask, &gc1);
-  // イメージにコピー
+  // copy to image, イメージにコピー
   dest         = (KXL_Image *)KXL_Malloc(sizeof(KXL_Image));
   dest->Width  = src_w;
   dest->Height = src_h;
@@ -96,10 +96,10 @@ KXL_Image *KXL_Copy_Image(KXL_Image *src, Uint16 src_l, Uint16 src_t, Uint16 src
             gc1,
             src_l, src_t, src_w, src_h,
             0, 0);
-  // クリップマスク作成
+  // Create clip mask, クリップマスク作成
   dest->MaskGC = XCreateGC(KXL_Root->Display, KXL_Root->Frame->Buffer, 0, 0);
   XSetClipMask(KXL_Root->Display, dest->MaskGC, dest->Mask);
-  // ローカル変数解放
+  // Free local variables, ローカル変数解放
   XFreeGC(KXL_Root->Display, gc8);
   XFreeGC(KXL_Root->Display, gc1);
   return dest;
@@ -125,11 +125,11 @@ KXL_Image *KXL_Copy_StretchImage(KXL_Image *src, Uint16 src_l, Uint16 src_t, Uin
   Uint32 i, p, pp;
   Uint16 ww = src->Width < width ? width : src->Width;
   Uint16 w2, h2;
-  
-  // GC作成
+
+  // GC creation, GC作成
   KXL_SetGC(src->Buffer, &gc8);
   KXL_SetGC(src->Mask, &gc1);
-  // 横の拡縮用イメージ作成
+  // Creating an image for horizontal scaling, 横の拡縮用イメージ作成
   tmp = (KXL_Image *)KXL_Malloc(sizeof(KXL_Image));
   tmp->Buffer = XCreatePixmap(KXL_Root->Display, KXL_Root->Win,
                               ww, src_h,
@@ -139,7 +139,7 @@ KXL_Image *KXL_Copy_StretchImage(KXL_Image *src, Uint16 src_l, Uint16 src_t, Uin
                             1);
   w2 = width / 2;
   h2 = height / 2;
-  // 横の拡縮
+  // Horizontal scaling, 横の拡縮
   for (i = 0, p = 0; i <= w2; i ++, p += ax) {
     pp = p / 1000;
     // From left to center
@@ -173,7 +173,7 @@ KXL_Image *KXL_Copy_StretchImage(KXL_Image *src, Uint16 src_l, Uint16 src_t, Uin
               src_l + src_w - 1 - pp, src_t, 1, src_h,
               width - 1 - i, 0);
   }
-  // 拡縮後のイメージ作成
+  // Creating an image after scaling, 拡縮後のイメージ作成
   dest         = (KXL_Image *)KXL_Malloc(sizeof(KXL_Image));
   dest->Width  = width;
   dest->Height = height;
@@ -183,7 +183,7 @@ KXL_Image *KXL_Copy_StretchImage(KXL_Image *src, Uint16 src_l, Uint16 src_t, Uin
   dest->Mask = XCreatePixmap(KXL_Root->Display, KXL_Root->Win,
                              width, height,
                              1);
-  // 縦の拡縮
+  // Vertical scaling, 縦の拡縮
   for (i = 0, p = 0; i <= h2; i ++, p += ay) {
     pp = p / 1000;
     // From up to center
@@ -220,7 +220,7 @@ KXL_Image *KXL_Copy_StretchImage(KXL_Image *src, Uint16 src_l, Uint16 src_t, Uin
   // Create clip mask GC
   dest->MaskGC = XCreateGC(KXL_Root->Display, KXL_Root->Frame->Buffer, 0, 0);
   XSetClipMask(KXL_Root->Display, dest->MaskGC, dest->Mask);
-  // ローカル変数解放
+  // Freeing local variables, ローカル変数解放
   XFreeGC(KXL_Root->Display, gc8);
   XFreeGC(KXL_Root->Display, gc1);
   XFreePixmap(KXL_Root->Display, tmp->Buffer);
@@ -311,7 +311,7 @@ void KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event)
 {
   XSizeHints sh;
 
-  // ウィンドウ用の領域を確保する
+  // Allocate space for the window, ウィンドウ用の領域を確保する
   KXL_Root = (KXL_Window *)KXL_Malloc(sizeof(KXL_Window));
   KXL_Root->Display = NULL;
   KXL_Root->Frame = NULL;
@@ -341,8 +341,8 @@ void KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event)
   KXL_Root->Win = XCreateSimpleWindow(KXL_Root->Display,
                                       RootWindow(KXL_Root->Display, 0),
                                       0, 0,
-                                      w, h, 
-                                      0, 
+                                      w, h,
+                                      0,
                                       WhitePixel(KXL_Root->Display, KXL_Root->Scr),
                                       BlackPixel(KXL_Root->Display, KXL_Root->Scr)
                                       );
@@ -410,7 +410,7 @@ void KXL_DeleteWindow(void)
 void KXL_ReSizeFrame(Uint16 w, Uint16 h)
 {
   if (KXL_Root->Frame) {
-    // 既存のフレーム削除
+    // Delete existing frame, 既存のフレーム削除
     XFreePixmap(KXL_Root->Display, KXL_Root->Frame->Buffer);
     XFreeGC(KXL_Root->Display, KXL_Root->Frame->Gc);
     KXL_Free(KXL_Root->Frame);
@@ -475,7 +475,7 @@ void KXL_Font(const char *str, Uint8 r, Uint8 g, Uint8 b)
 void KXL_PutText(Sint16 x, Sint16 y, const char *str)
 {
   XDrawString(KXL_Root->Display,
-              KXL_Root->Frame->Buffer, 
+              KXL_Root->Frame->Buffer,
               KXL_Root->FontGC,
               x, y, str, strlen(str));
 }
@@ -583,7 +583,7 @@ void KXL_DrawPolygon(KXL_Polygon *data, Uint16 max, Bool next, Bool flag)
 //==============================================================
 KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
 {
-  // ヘッダ情報用構造体
+  // Header information structure, ヘッダ情報用構造体
   KXL_BitmapHeader hed;
   Uint32 i, j, k, l, no;
   KXL_Image *new;
@@ -591,16 +591,16 @@ KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
   GC gc8, gc1;
   Visual *v = DefaultVisual(KXL_Root->Display, KXL_Root->Scr);
 
-  // ビットマップヘッダ読込み
+  // Load bitmap header, ビットマップヘッダ読込み
   KXL_ReadBitmapHeader(filename, &hed);
   if (!hed.data)
     return NULL;
-  // イメージサイズ設定
+  // Image size settings, イメージサイズ設定
   new = (KXL_Image *)KXL_Malloc(sizeof(KXL_Image));
   new->Width = hed.w;
   new->Height = hed.height;
 
-  // 8bpsのビットマップを24 or 16bpp化する
+  // Convert an 8bps bitmap to 24 or 16bpp, 8bpsのビットマップを24 or 16bpp化する
   img = XCreateImage(KXL_Root->Display,
                      v,
                      KXL_Root->Depth,
@@ -612,7 +612,7 @@ KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
     KXL_CreateBitmap8to16(hed.data, img, hed.rgb, blend);
   else // 24 or 32
     KXL_CreateBitmap8to24(hed.data, img, hed.rgb, blend);
-  // イメージをピックスマップにコピーする
+  // Copy the image to a pixmap, イメージをピックスマップにコピーする
   new->Buffer = XCreatePixmap(KXL_Root->Display, KXL_Root->Win,
                               new->Width, new->Height,
                               KXL_Root->Depth);
@@ -625,7 +625,7 @@ KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
             0, 0, new->Width, new->Height); // from
   XDestroyImage(img);
 
-  // 8bpsのビットマップを1bps化する
+  // Convert an 8bps bitmap to 1bps, 8bpsのビットマップを1bps化する
   img = XCreateImage(KXL_Root->Display,
                      v,
                      1,
@@ -635,7 +635,7 @@ KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
   img->data = KXL_Malloc(img->bytes_per_line * new->Height);
   memset(img->data, 0, img->bytes_per_line * new->Height);
   KXL_CreateBitmap8to1(hed.data, img, blend);
-  // マスクイメージをピックスマップにコピーする
+  // Copy the mask image to a pixmap, マスクイメージをピックスマップにコピーする
   new->Mask = XCreatePixmap(KXL_Root->Display, KXL_Root->Win,
                             new->Width, new->Height,
                             1);
@@ -648,11 +648,11 @@ KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
             0, 0, new->Width, new->Height); // from
   XDestroyImage(img);
 
-  // クリップマスク作成
+  // Create clip mask, クリップマスク作成
   new->MaskGC = XCreateGC(KXL_Root->Display, KXL_Root->Frame->Buffer, 0, 0);
   XSetClipMask(KXL_Root->Display, new->MaskGC, new->Mask);
 
-  // 作業用メモリを解放する
+  // Free up working memory, 作業用メモリを解放する
   XFreeGC(KXL_Root->Display, gc8);
   XFreeGC(KXL_Root->Display, gc1);
   KXL_Free(hed.rgb);

@@ -58,7 +58,7 @@ KXL_WaveList *KXL_wavelist;
 Bool KXL_SoundOk;
 
 //==============================================================
-//  サウンドサーバー
+// sound server, サウンドサーバー
 //==============================================================
 void KXL_SoundServer(void)
 {
@@ -79,7 +79,7 @@ void KXL_SoundServer(void)
   // receive data clear
   FD_ZERO(&sound_fdset);
   FD_SET(KXL_SoundData.Pipe[0], &sound_fdset);
-  
+
   // loop
   while (1) {
     FD_SET(KXL_SoundData.Pipe[0], &sound_fdset);
@@ -110,7 +110,7 @@ void KXL_SoundServer(void)
       KXL_SoundData.PlayCnt = 0;
       break;
     }
-    
+
     if (KXL_SoundData.PlayCnt || Command.Active == True) {
       struct timeval delay = {0, 0};
 #ifndef USE_PULSEAUDIO
@@ -206,9 +206,9 @@ void KXL_SoundServer(void)
 }
 
 //==============================================================
-//  サウンド再生
-//  引き数：サウンド番号
-//        ：コマンド
+// Play sound, サウンド再生
+// Arguments: Sound number, 引き数：サウンド番号
+//          : command, コマンド
 //==============================================================
 void KXL_PlaySound(Uint16 no, KXL_Command action)
 {
@@ -232,9 +232,9 @@ void KXL_PlaySound(Uint16 no, KXL_Command action)
 }
 
 //==============================================================
-//  サウンドファイル読み込み
-//  引き数：ディレクトリ
-//        ：ファイル名
+// Load sound file, サウンドファイル読み込み
+// Arguments: directory, 引き数：ディレクトリ
+//          : file name, ファイル名
 //==============================================================
 KXL_WaveList KXL_LoadSound(const char *path, const char *fname)
 {
@@ -262,9 +262,9 @@ KXL_WaveList KXL_LoadSound(const char *path, const char *fname)
 }
 
 //==============================================================
-//  サウンドファイル読み込み
-//  引き数：ディレクトリ
-//        ：ファイル名リスト
+// Load sound file, サウンドファイル読み込み
+// Arguments: directory, 引き数：ディレクトリ
+//          : file name list, ファイル名リスト
 //==============================================================
 void KXL_LoadSoundData(const char *path, char **fname)
 {
@@ -278,9 +278,9 @@ void KXL_LoadSoundData(const char *path, char **fname)
 }
 
 //==============================================================
-//  サウンドサーバー初期化
-//  引き数：ディレクトリ
-//        ：ファイル名リスト
+// Sound server initialization, サウンドサーバー初期化
+// Arguments: directory, 引き数：ディレクトリ
+//          : file name list, ファイル名リスト
 //==============================================================
 void KXL_InitSound(const char *path, char **fname)
 {
@@ -351,7 +351,7 @@ void KXL_InitSound(const char *path, char **fname)
 }
 
 //==============================================================
-//  サウンドサーバー終了
+// Sound server ended, サウンドサーバー終了
 //==============================================================
 void KXL_EndSound(void)
 {
@@ -374,4 +374,3 @@ void KXL_EndSound(void)
     KXL_Free(KXL_wavelist[-- KXL_SoundData.ListCnt].Data);
   KXL_Free(KXL_wavelist);
 }
-

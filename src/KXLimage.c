@@ -6,7 +6,7 @@
 extern KXL_Window *KXL_Root;
 
 //==============================================================
-//  8bppのＢＭＰを16bpp化する
+// Convert an 8bpp BMP to 16bpp, 8bppのＢＭＰを16bpp化する
 //  引き数：8bpsデータ
 //        ：16bpsXイメージ
 //        ：パレット
@@ -17,17 +17,17 @@ void KXL_CreateBitmap8to16(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 blend)
 
   for (y = 0; y < to->height; y ++) {
     for (x = 0; x < to->width; x ++) {
-      // オフセット計算
+      // Offset calculation, オフセット計算
       offset = (y * to->bytes_per_line) + (x << 1);
       no = from[y * to->width + x];
-      if (no == blend) { // 指定パレット番号を黒にする
+      if (no == blend) { // Make the specified pallet number black., 指定パレット番号を黒にする
         to->data[offset ++] = 0x00;
         to->data[offset ++] = 0x00;
       } else {
         // 000rrrrr, 000ggggg, 000bbbbb
         //            |
         // gg0bbbbb, rrrrrggg
-        if (!(rgb[no].r | rgb[no].g | rgb[no].b)) { // 完全な黒を無くす
+        if (!(rgb[no].r | rgb[no].g | rgb[no].b)) { // Eliminate complete black, 完全な黒を無くす
           to->data[offset++] = 0x41;
           to->data[offset++] = 0x08;
         } else {
@@ -40,7 +40,7 @@ void KXL_CreateBitmap8to16(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 blend)
 }
 
 //==============================================================
-//  8bppのＢＭＰを24bpp化する
+// Convert an 8bpp BMP to 16bpp, 8bppのＢＭＰを24bpp化する
 //  引き数：8bpsデータ
 //        ：24bpsXイメージ
 //        ：パレット
@@ -54,12 +54,12 @@ void KXL_CreateBitmap8to24(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 blend)
       // オフセット計算
       offset = (y * to->bytes_per_line) + ((x * to->bits_per_pixel) >> 3);
       no = from[y * to->width + x];
-      if (no == blend) { // 指定パレット番号を黒にする
+      if (no == blend) { // Make the specified pallet number black., 指定パレット番号を黒にする
         to->data[offset ++] = 0x00;
         to->data[offset ++] = 0x00;
         to->data[offset ++] = 0x00;
       } else {
-        if (!(rgb[no].r | rgb[no].g | rgb[no].b)) { // 完全な黒を無くす
+        if (!(rgb[no].r | rgb[no].g | rgb[no].b)) { // Eliminate complete black, 完全な黒を無くす
           to->data[offset ++] = 0x01;
           to->data[offset ++] = 0x01;
           to->data[offset ++] = 0x01;
@@ -74,14 +74,14 @@ void KXL_CreateBitmap8to24(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 blend)
 }
 
 //==============================================================
-//  8bppのＢＭＰを1bpp化する
+// Converting an 8bpp BMP to 1bpp, 8bppのＢＭＰを1bpp化する
 //  引き数：8bpsデータ
 //        ：1bpsXイメージ
 //==============================================================
 void KXL_CreateBitmap8to1(Uint8 *from, XImage *to, Uint8 blend)
 {
   Uint16 x, y, offset, no;
-  
+
   for (y = 0; y < to->height; y ++) {
     for (x = 0; x < to->width; x ++) {
       // オフセット計算
@@ -96,9 +96,9 @@ void KXL_CreateBitmap8to1(Uint8 *from, XImage *to, Uint8 blend)
 }
 
 //==============================================================
-//  ビットマップヘッダ情報読み込み
-//  引き数：ファイル名
-//        ：ヘッダ情報のポインタ
+// Bitmap header information loading, ビットマップヘッダ情報読み込み
+// Argument: file name, 引き数：ファイル名
+//         :Header information pointer, ヘッダ情報のポインタ
 //  If the image data is NULL, that means the function has failed.
 //==============================================================
 void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
@@ -111,7 +111,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   struct stat st;
   Bool stat_ok = 0;
 
-  // ファイルを読み込み専用で開く
+  // Open the file in read-only mode, ファイルを読み込み専用で開く
   if ((fp = fopen(filename,"rb")) == 0) {
     fprintf(stderr, "KXL error message\n'%s' is open error\n", filename);
     return;
@@ -119,7 +119,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   int fd = fileno(fp);
   if (fd != -1)
     stat_ok = !fstat(fd, &st);
-  // ヘッダ読み込み
+  // Header reading, ヘッダ読み込み
   fread(hed->magic, 1, 2, fp);
   if (hed->magic[0] != 'B' || hed->magic[1] != 'M') {
     fprintf(stderr, "KXL error message\n'%s' is not bitmap file\n", filename);
@@ -135,16 +135,16 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   hed->height     = KXL_ReadU32(fp);
   hed->plane      = KXL_ReadU16(fp);
   hed->depth      = KXL_ReadU16(fp);
-  // 4 or 8bpp 以外はサポート外
+  // not supported except for 4 or 8bpp, 以外はサポート外
   if (hed->depth < 4 || hed->depth > 8) {
-    fprintf(stderr, "KXL error message\n'%s' %dbps not support\n", 
+    fprintf(stderr, "KXL error message\n'%s' %dbps not support\n",
             filename, hed->depth);
     fclose(fp);
     return;
   }
   hed->lzd        = KXL_ReadU32(fp);
   hed->image_size = KXL_ReadU32(fp);
-  // イメージサイズがなければ終了
+  // Exit if there is no image size, イメージサイズがなければ終了
   if (hed->image_size == 0) {
     fprintf(stderr, "KXL error message\n'%s not found image size\n",
             filename);
@@ -155,7 +155,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   hed->y_pixels   = KXL_ReadU32(fp);
   hed->pals       = KXL_ReadU32(fp);
   hed->pals2      = KXL_ReadU32(fp);
-  // 使用パレット数設定
+  // Setting the number of pallets used, 使用パレット数設定
   hed->pals = hed->pals ? hed->pals : (1 << hed->depth);
   // Check if there is space for the palette.
   if (stat_ok) {
@@ -171,7 +171,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
       return;
     }
   }
-  // カラーマップ取得
+  // Get color map, カラーマップ取得
   hed->rgb = (KXL_RGBE *)KXL_Malloc(sizeof(KXL_RGBE) * hed->pals);
   for (i = 0; i < hed->pals; i ++) {
     hed->rgb[i].b = fgetc(fp);
@@ -185,7 +185,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
       hed->rgb[i].r /= 8;
     }
   }
-  // 横幅を4の倍数で補正する
+  // Adjust the width to a multiple of 4, 横幅を4の倍数で補正する
   hed->w = ((hed->width + 3) / 4) * 4;
   // Check if there is space for the palette.
   if (stat_ok) {
@@ -202,25 +202,25 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
       return;
     }
   }
-  // データ領域確保
+  // Secure data area, データ領域確保
   if (hed->depth == 8)
     hed->data = (Uint8 *)KXL_Malloc(hed->image_size);
   else
     hed->data = (Uint8 *)KXL_Malloc(hed->image_size * 2);
-  // データを取得する
+  // get data, データを取得する
   if (hed->depth == 8) {
-    // 8bppのbmpを読み込み格納する
+    // Read and store an 8bpp BMP image, 8bppのbmpを読み込み格納する
     for (i = 0; i < hed->height; i++) {
-      // 最終ラインから読み込む
-      fseek(fp, hed->offset + (hed->height - i - 1) * hed->w, 0); 
+      // Load from the last line, 最終ラインから読み込む
+      fseek(fp, hed->offset + (hed->height - i - 1) * hed->w, 0);
       fread(&(hed->data[i * hed->w]), hed->w, 1, fp);
     }
   } else {
     Uint32 w = (((hed->width / 2) + 3) / 4) * 4;
-    // 4bppのbmpを読み込み格納する
+    // Read and store a 4bpp BMP image, 4bppのbmpを読み込み格納する
     for (i = 0; i < hed->height; i++) {
-      // 最終ラインから読み込む
-      fseek(fp, hed->offset + (hed->height - i - 1) * w, 0); 
+      // Load from the last line, 最終ラインから読み込む
+      fseek(fp, hed->offset + (hed->height - i - 1) * w, 0);
       for (j = 0; j < w; j ++) {
         data = fgetc(fp);
         hed->data[i * hed->w + j * 2 + 0] = data >> 4;
