@@ -36,12 +36,12 @@ START_TEST(test_LoadBitmap)
                    KXL_EVENT_EXPOSURE_MASK |
                    KXL_EVENT_KEY_PRESS_MASK);
 
-    KXL_Image *bmp = KXL_LoadBitmap("../../geki2/bmp/boss1.bmp", 0);
+    KXL_Image *bmp = KXL_LoadBitmap("../docs/sample.bmp", 0);
     ck_assert(bmp != NULL);
     KXL_DeleteImage(bmp);
 
     // Load AFL++ generated bmp which used to cause old KXL versions to go into an infinite loop
-    bmp = KXL_LoadBitmap("../fuzz/test_bmp_PXIpZM", 0);
+    bmp = KXL_LoadBitmap("test_bmp_PXIpZM", 0);
     ck_assert(!bmp);
     KXL_DeleteWindow();
 }
@@ -50,8 +50,8 @@ END_TEST
 #ifdef USE_PULSEAUDIO
 START_TEST(test_InitSound)
 {
-    char *snames[] = {"bgm1", ""};
-    KXL_InitSound("../../geki2/wav", snames);
+    char *snames[] = {"sound1", ""};
+    KXL_InitSound("../docs/", snames);
     ck_assert(KXL_SoundOk);
     KXL_EndSound();
     char *notexist[] = {"non-existent", ""};
