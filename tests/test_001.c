@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <check.h>
-#include <KXL.h>
+
+#include "KXL.h"
+#include "KXL-config.h"
 
 extern KXL_Window *KXL_Root;
 extern Bool KXL_SoundOk;
@@ -45,6 +47,7 @@ START_TEST(test_LoadBitmap)
 }
 END_TEST
 
+#ifdef USE_PULSEAUDIO
 START_TEST(test_InitSound)
 {
     char *snames[] = {"bgm1", ""};
@@ -57,6 +60,7 @@ START_TEST(test_InitSound)
     KXL_EndSound();
 }
 END_TEST
+#endif
 
 Suite * KXL_suite(void)
 {
@@ -69,7 +73,9 @@ Suite * KXL_suite(void)
     tcase_add_test(KXL_core, test_CreateWindow);
     tcase_add_exit_test(KXL_core, test_CreateWindow2, 1);
     tcase_add_test(KXL_core, test_LoadBitmap);
+#ifdef USE_PULSEAUDIO
     tcase_add_test(KXL_core, test_InitSound);
+#endif
 
     suite_add_tcase(s, KXL_core);
 

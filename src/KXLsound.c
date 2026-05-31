@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <sys/soundcard.h>
 #include <linux/limits.h> // for PATH_MAX
+#include "KXL-config.h"
 #ifdef USE_PULSEAUDIO
 #include <pulse/simple.h>
 #include <pulse/error.h>

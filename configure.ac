@@ -89,63 +89,58 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])],
   [AC_SUBST([AM_DEFAULT_VERBOSITY],[1])])
 
 #-------------------------------------------
+# Checks for packages and libraries.
+PKG_CHECK_MODULES([X11], [x11 >= 1.6.4],,
+  [AC_MSG_ERROR([Please install the libX11 development package, then try again])])
+AC_SUBST([X11_CFLAGS])
+AC_SUBST([X11_LIBS])
 
-dnl Checks for libraries.
+AC_ARG_ENABLE([pulseaudio],
+  [AS_HELP_STRING([--enable-pulseaudio], [enable PulseAudio sound output @<:@default=no@:>@])],
+  [pulseaudio=$enableval], [pulseaudio=no])
+
+PULSEAUDIO_CFLAGS=
+PULSEAUDIO_LIBS=
+if test x"$pulseaudio" = xyes; then
+  PKG_CHECK_MODULES([PULSEAUDIO], [libpulse-simple >= 14.2],,
+    [AC_MSG_ERROR([Please install the libpulseaudio development package, then try again])])
+  AC_DEFINE([USE_PULSEAUDIO], [1], [libKXL Sound uses Pulse Audio])
+fi
+AM_CONDITIONAL([USE_PULSEAUDIO], [test x"$pulseaudio" = xno])
+AC_SUBST([PULSEAUDIO_CFLAGS])
+AC_SUBST([PULSEAUDIO_LIBS])
+
 dnl https://libcheck.github.io/check/
 PKG_CHECK_MODULES([CHECK], [check >= 0.9.10])
 
 dnl Checks for header files.
-AC_PATH_XTRA
-AC_HEADER_STDC
+AC_CONFIG_HEADERS([KXL-config.h])
 AC_CHECK_HEADERS(fcntl.h malloc.h sys/ioctl.h sys/time.h)
 
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_TIME
-
 dnl Checks for library functions.
-AC_PROG_GCC_TRADITIONAL
-AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(select)
 
 aclocaldir='${datadir}/aclocal'
 AC_SUBST(aclocaldir)
-
-dnl Whether to enable fuzz testing
-AC_ARG_ENABLE([fuzz],
-  [AS_HELP_STRING([--enable-fuzz], [enable fuzz testing KXL_LoadBitmap
-  @<:@default=no@:>@])],
-  [fuzz=$enableval], [fuzz=no])
-
-if test x"$fuzz" = xyes; then
-  AC_DEFINE([FUZZ], [1], [Define if building fuzz program])
-  AC_SUBST([FUZZ])
-  AC_CONFIG_FILES([fuzz/Makefile])
-fi
-AM_CONDITIONAL([ENABLE_FUZZ], [test x"$fuzz" = xyes])
-
-dnl Whether to enable unit testing
-AC_ARG_ENABLE([test],
-  [AS_HELP_STRING([--enable-test], [enable unit tests
-  @<:@default=yes@:>@])],
-  [test=$enableval], [test=yes])
-
-if test x"$test" = xyes; then
-  AC_DEFINE([TEST], [1], [Define if unit testing])
-  AC_SUBST([TEST])
-  AC_CONFIG_FILES([tests/Makefile])
-fi
-
-AM_CONDITIONAL([ENABLE_TEST], [test x"$test" = xyes])
 
 #-------------------------------------------
 # Pass some variables to MAKEFILE.AM
 AC_SUBST([HOST], [$host])
 AC_SUBST([LIBKXL_CRA], [$libkxl_CRA])
 
+#-------------------------------------------
+# Put ifdef wrapper around KXL-config.h that
+# it's not accidently called twice.
+AH_TOP([#ifndef _KXL_CONFIG_H
+#define _KXL_CONFIG_H 1])
+AH_BOTTOM([#endif])
+
+#-------------------------------------------
 AC_CONFIG_FILES([
 KXL.spec
 Makefile
 src/Makefile
+tests/Makefile
 docs/Makefile
 libkxl.pc
 ])

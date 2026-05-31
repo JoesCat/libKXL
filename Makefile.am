@@ -1,17 +1,11 @@
 # Makefile.am - Top level automakefile for libkxl
 
-SUBDIRS = src docs
-if ENABLE_FUZZ
-SUBDIRS += fuzz
-endif
-if ENABLE_TEST
-SUBDIRS += tests
-endif
+SUBDIRS = src tests docs
 
 aclocaldir = @aclocaldir@
 aclocal_DATA = m4/KXL.m4
 
-DIST_SUBDIRS = src tests fuzz docs
+DIST_SUBDIRS = src tests docs
 EXTRA_DIST = AUTHORS COPYING NEWS README \
   ChangeLog KXL.spec.in README.md m4/KXL.m4 libkxl.pc.in
 DISTCLEANFILES = ar-lib compile config.guess config.log config.sub \
