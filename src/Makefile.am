@@ -8,10 +8,10 @@ include_HEADERS = KXL.h
 
 lib_LTLIBRARIES = libkxl.la
 
-libkxl_la_SOURCES = KXLmisc.c KXLsound.c KXLvisual.c KXLimage.c
-libkxl_la_CFLAGS = ${X11_CFLAGS} ${PULSEAUDIO_CFLAGS}
+libkxl_la_SOURCES = KXLmisc.c KXLsound.c KXLjoystick.c KXLvisual.c KXLimage.c
+libkxl_la_CFLAGS  = ${X11_CFLAGS} ${PULSEAUDIO_CFLAGS}
 libkxl_la_LDFLAGS = -no-undefined -version-info ${LIBKXL_CRA}
-libkxl_la_LIBADD = ${X11_LIBS} ${PULSEAUDIO_LIBS}
+libkxl_la_LIBADD  = ${X11_LIBS} ${PULSEAUDIO_LIBS}
 libkxl_la.$(OBJEXT): KXL.h
 
-EXTRA_DIST = KXL.h KXLmisc.c KXLsound.c KXLvisual.c KXLimage.c
+EXTRA_DIST = KXL.h KXLmisc.c KXLsound.c KXLjoystick.c KXLvisual.c KXLimage.c

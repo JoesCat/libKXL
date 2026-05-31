@@ -9,6 +9,7 @@ Unreleased 1.2.5 [2026may28] Nathan Mills <Quipyowert2@users.noreply.github.com>
 	    020_badfont.diff, 020_headers.diff, 040_nonlinux.diff,
 	    do_not_overrun_display_name_variable.patch
 	- Add AUTHORS, touch NEWS, touch README, to satisfy autoconf
+	- Import Debian Joystick support (from 1.1.6, 2003jan16)
 -------------------------------------------------------------------------------
 Release 1.2.4 [2021sep30] Nathan Mills <Quipyowert2@users.noreply.github.com>
 	- Fix incompatible pointer type warning.

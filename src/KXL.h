@@ -6,6 +6,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/XKBlib.h>
+#include <linux/joystick.h>
 
 //================================================================
 // Global structures and variables
@@ -52,7 +53,7 @@
 #define KXL_KEY_Shift_R	        0xffe2
 #define KXL_KEY_Control_L       0xffe3
 #define KXL_KEY_Control_R       0xffe4
-#define KXL_KEY_Space           0x020 // 
+#define KXL_KEY_Space           0x020 //
 #define KXL_KEY_Exclam          0x021 // !
 #define KXL_KEY_Quotedbl        0x022 // "
 #define KXL_KEY_Numbersign      0x023 // #
@@ -60,7 +61,7 @@
 #define KXL_KEY_Percent         0x025 // %
 #define KXL_KEY_Ampersand       0x026 // &
 #define KXL_KEY_Apostrophe      0x027 //
-#define KXL_KEY_Quoteright      0x027 // 
+#define KXL_KEY_Quoteright      0x027 //
 #define KXL_KEY_Parenleft       0x028 // (
 #define KXL_KEY_Parenright      0x029 // )
 #define KXL_KEY_Asterisk        0x02a // *
@@ -181,6 +182,7 @@ typedef enum {
   KXL_SOUND_STOP_ALL,    // Stop all sound
   KXL_SOUND_QUIT         // Quit the sound server
 } KXL_Command;
+typedef struct JS_DATA_TYPE KXL_Joystick;
 
 //================================================================
 // Internal structures
@@ -331,6 +333,11 @@ void        KXL_GetDirectionAdd(Sint16 , Sint16 *x, Sint16 *y);
     y.Left < m.Left + m.Width  - 1 &&\
     y.Top  < m.Top  + m.Height - 1)\
     ? True : False)
-
+//================================================================
+// Joystick function prototypes
+//================================================================
+Bool KXL_OpenJoystick(Uint8 *devname);
+void KXL_CloseJoystick(void);
+Bool KXL_ReadJoystick(KXL_Joystick *my);
 
 #endif
