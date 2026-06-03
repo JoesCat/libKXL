@@ -101,7 +101,7 @@ void KXL_CreateBitmap8to1(Uint8 *from, XImage *to, Uint8 blend)
 //         :Header information pointer, ヘッダ情報のポインタ
 //  If the image data is NULL, that means the function has failed.
 //==============================================================
-void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
+static int KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed)
 {
   FILE *fp;
   Uint16 i, j;
@@ -114,7 +114,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   // Open the file in read-only mode, ファイルを読み込み専用で開く
   if ((fp = fopen(filename,"rb")) == 0) {
     fprintf(stderr, "KXL error message\n'%s' is open error\n", filename);
-    return;
+    return -1;
   }
   int fd = fileno(fp);
   if (fd != -1)
@@ -122,9 +122,9 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   // Header reading, ヘッダ読み込み
   fread(hed->magic, 1, 2, fp);
   if (hed->magic[0] != 'B' || hed->magic[1] != 'M') {
-    fprintf(stderr, "KXL error message\n'%s' is not bitmap file\n", filename);
+    fprintf(stderr, "KXL error message\n'%s' is not a bitmap file\n", filename);
     fclose(fp);
-    return;
+    return -1;
   }
   hed->file_size  = KXL_ReadU32(fp);
   hed->reserved1  = KXL_ReadU16(fp);
@@ -133,23 +133,31 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   hed->hed_size   = KXL_ReadU32(fp);
   hed->width      = KXL_ReadU32(fp);
   hed->height     = KXL_ReadU32(fp);
+  // not supported, bad image, not usable here
+  if (hed->width == 0  || hed->width > 0xffff  || \
+      hed->height == 0 || hed->height > 0xffff ) {
+    fprintf(stderr, "KXL error message\n'%s' [width=%d, height=%d] not supported\n",
+            filename, hed->width, hed->height);
+    fclose(fp);
+    return -1;
+  }
   hed->plane      = KXL_ReadU16(fp);
   hed->depth      = KXL_ReadU16(fp);
   // not supported except for 4 or 8bpp, 以外はサポート外
   if (hed->depth < 4 || hed->depth > 8) {
-    fprintf(stderr, "KXL error message\n'%s' %dbps not support\n",
+    fprintf(stderr, "KXL error message\n'%s' %dbps is not supported\n",
             filename, hed->depth);
     fclose(fp);
-    return;
+    return -1;
   }
   hed->lzd        = KXL_ReadU32(fp);
   hed->image_size = KXL_ReadU32(fp);
   // Exit if there is no image size, イメージサイズがなければ終了
   if (hed->image_size == 0) {
-    fprintf(stderr, "KXL error message\n'%s not found image size\n",
+    fprintf(stderr, "KXL error message\n'%s image size not found\n",
             filename);
     fclose(fp);
-    return;
+    return -1;
   }
   hed->x_pixels   = KXL_ReadU32(fp);
   hed->y_pixels   = KXL_ReadU32(fp);
@@ -168,7 +176,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
 #endif
       fprintf(stderr, "KXL error message\n'%s' not found palette or truncated\n", filename);
       fclose(fp);
-      return;
+      return -1;
     }
   }
   // Get color map, カラーマップ取得
@@ -199,7 +207,7 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
       fprintf(stderr, "KXL error message\n'%s' not found image data or truncated\n", filename);
       free(hed->rgb);
       fclose(fp);
-      return;
+      return -1;
     }
   }
   // Secure data area, データ領域確保
@@ -230,4 +238,21 @@ void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
   }
   hed->depth = 8;
   fclose(fp);
+  return 0;
 }
+
+void KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed)
+{
+  int i;
+  if (KXL_ReadBitmapHeader0(filename, hed)) {
+    // error, cleanup hed and then return
+    if (hed->data)
+      KXL_Free(hed->data);
+    if (hed->rgb)
+      KXL_Free(hed->rgb);
+    for (i = 0; i < sizeof(hed); i++)
+      (Uint)(hed[i]) = (Uint8)(0);
+  }
+  return;
+}
+
