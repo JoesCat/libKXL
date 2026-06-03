@@ -47,6 +47,20 @@ START_TEST(test_LoadBitmap)
 }
 END_TEST
 
+#ifdef USE_PIPEWIREAUDIO
+START_TEST(test_InitSound)
+{
+    char *snames[] = {"sound1", ""};
+    KXL_InitSound("../docs/", snames);
+    ck_assert(KXL_SoundOk);
+    KXL_EndSound();
+    char *notexist[] = {"non-existent", ""};
+    KXL_InitSound("/dev/random/foo", notexist);
+    ck_assert(!KXL_SoundOk);
+    KXL_EndSound();
+}
+END_TEST
+#else
 #ifdef USE_PULSEAUDIO
 START_TEST(test_InitSound)
 {
@@ -61,6 +75,7 @@ START_TEST(test_InitSound)
 }
 END_TEST
 #endif
+#endif
 
 Suite * KXL_suite(void)
 {
@@ -73,10 +88,13 @@ Suite * KXL_suite(void)
     tcase_add_test(KXL_core, test_CreateWindow);
     tcase_add_exit_test(KXL_core, test_CreateWindow2, 1);
     tcase_add_test(KXL_core, test_LoadBitmap);
+#ifdef USE_PIPEWIREAUDIO
+    tcase_add_test(KXL_core, test_InitSound);
+#else
 #ifdef USE_PULSEAUDIO
     tcase_add_test(KXL_core, test_InitSound);
 #endif
-
+#endif
     suite_add_tcase(s, KXL_core);
 
     return s;

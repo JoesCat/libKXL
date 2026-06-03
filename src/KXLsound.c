@@ -12,6 +12,11 @@
 #include <sys/soundcard.h>
 #include <linux/limits.h> // for PATH_MAX
 #include "KXL-config.h"
+#ifdef USE_PIPEWIREAUDIO
+#include <pipewire/pipewire.h>
+#include <pulse/simple.h>
+#include <pulse/error.h>
+#endif
 #ifdef USE_PULSEAUDIO
 #include <pulse/simple.h>
 #include <pulse/error.h>
@@ -34,12 +39,17 @@ typedef struct {
 struct {
   Uint16           ListCnt;
   Sint32           ID;
+#ifdef USE_PIPEWIREAUDIO
+  int              Pipe[2];
+  pa_simple       *Device;
+#else
 #ifdef USE_PULSEAUDIO
   int              Pipe[2];
   pa_simple       *Device;
 #else
   Sint32           Pipe[2];
   Sint32           Device;
+#endif
 #endif
   Uint16           PlayCnt;
   KXL_SoundControl PlaySound[MAX_SOUNDS_PLAYING];
@@ -113,7 +123,10 @@ void KXL_SoundServer(void)
 
     if (KXL_SoundData.PlayCnt || Command.Active == True) {
       struct timeval delay = {0, 0};
-#ifndef USE_PULSEAUDIO
+#ifdef USE_PIPEWIREAUDIO
+#else
+#ifdef USE_PULSEAUDIO
+#else
       if (!KXL_SoundData.PlayCnt) {
         // set fragment
         arg = 0x00020009;
@@ -136,6 +149,7 @@ void KXL_SoundServer(void)
           }
         }
       }
+#endif
 #endif
       if (Command.Active == True && KXL_SoundData.PlayCnt < MAX_SOUNDS_PLAYING) {
         for (i = 0; i < MAX_SOUNDS_PLAYING; i ++) {
@@ -188,12 +202,28 @@ void KXL_SoundServer(void)
         pa_simple_write(KXL_SoundData.Device, KXL_SoundData.PBuff, fragment_size, &error);
         if (error)
           fprintf(stderr, "KXL error message\nfailed to write sound data: %s\n", pa_strerror(error));
+        #else
+#ifdef USE_PULSEAUDIO
+        int error = 0;
+        pa_simple_write(KXL_SoundData.Device, KXL_SoundData.PBuff, fragment_size, &error);
+        if (error)
+          fprintf(stderr, "KXL error message\nfailed to write sound data: %s\n", pa_strerror(error));
 #else
         write(KXL_SoundData.Device, KXL_SoundData.PBuff, fragment_size);
+#endif
 #endif
       }
     }
   }
+  #ifdef USE_PIPEWIREAUDIO
+  if (KXL_SoundData.Device) {
+    int error;
+    pa_simple_drain(KXL_SoundData.Device, &error);
+    if (error)
+      fprintf(stderr, "KXL error message\nfailed to drain sound data: %s\n", pa_strerror(error));
+    pa_simple_free(KXL_SoundData.Device);
+  }
+#else
 #ifdef USE_PULSEAUDIO
   if (KXL_SoundData.Device) {
     int error;
@@ -202,6 +232,7 @@ void KXL_SoundServer(void)
       fprintf(stderr, "KXL error message\nfailed to drain sound data: %s\n", pa_strerror(error));
     pa_simple_free(KXL_SoundData.Device);
   }
+#endif
 #endif
 }
 
@@ -291,6 +322,8 @@ void KXL_InitSound(const char *path, char **fname)
   for (i = 0;i < KXL_SoundData.ListCnt;i++)
     if (KXL_wavelist[i].Data == NULL)
       return;
+#ifdef USE_PIPEWIREAUDIO
+#else
 #ifndef USE_PULSEAUDIO
   // device check
   // Open the sound device in non-blocking mode, because ALSA's OSS
@@ -307,6 +340,7 @@ void KXL_InitSound(const char *path, char **fname)
   fcntl(KXL_SoundData.Device, F_SETFL,
         fcntl(KXL_SoundData.Device, F_GETFL) &~ FNDELAY);
 #endif
+#endif
   // create pipe
   if (pipe(KXL_SoundData.Pipe) < 0) {
     fprintf(stderr, "KXL error message\npipe error\n");
@@ -320,6 +354,28 @@ void KXL_InitSound(const char *path, char **fname)
 
   if (!KXL_SoundData.ID) { // child
     close(KXL_SoundData.Pipe[1]);
+#ifdef USE_PIPEWIREAUDIO
+    pa_sample_spec ss;
+    ss.format = PA_SAMPLE_U8,
+    ss.channels = 1;
+    ss.rate = 8000;
+    int error = 0;
+    // device check
+    KXL_SoundData.Device = pa_simple_new(NULL,
+                                         "Geki2",
+                                         PA_STREAM_PLAYBACK,
+                                         NULL,
+                                         "Music",
+                                         &ss,
+                                         NULL,
+                                         NULL,
+                                         &error
+    );
+    if (!KXL_SoundData.Device || error) {
+      fprintf(stderr, "KXL error message\nnot found sound card\n");
+      return;
+    }
+#else
 #ifdef USE_PULSEAUDIO
     pa_sample_spec ss;
     ss.format = PA_SAMPLE_U8,
@@ -342,6 +398,7 @@ void KXL_InitSound(const char *path, char **fname)
       return;
     }
 #endif
+#endif
     KXL_SoundServer();
     exit(-1);
   } else { // parents
@@ -355,9 +412,12 @@ void KXL_InitSound(const char *path, char **fname)
 //==============================================================
 void KXL_EndSound(void)
 {
+#ifdef USE_PULSEAUDIO
+#else
 #ifndef USE_PULSEAUDIO
   if (KXL_SoundData.Device != -1)
     close(KXL_SoundData.Device);
+#endif
 #endif
   if (KXL_SoundOk == True) {
     KXL_PlaySound(0, KXL_SOUND_QUIT);

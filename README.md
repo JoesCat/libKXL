@@ -1,4 +1,4 @@
-		KXL, a visual,sound library
+		libKXL, a visual,sound library
 		Copyright (C) 2001, Katsuyoshi Sato
 			fc3srx7@mwnet.or.jp
 
@@ -10,7 +10,7 @@ as well as higher level functions for text drawing, timer and events
 handling and image manipulation.
 
 This package contains the header files and static library needed to
-compile applications that use libkxl
+compile applications that use libKXL
 
 --------------------------------------------------------------------------
 
@@ -32,18 +32,23 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 # Install
 ```bash
-  tar xzvf KXL-xxxx(xxxx is version)
-  cd KXL-xxxx
-  ./configure
-  make
-  make install
+cd libKXL
+autoreconf -i
+automake
+./configure
+make
+make check
+sudo make install
 ```
 --------------------------------------------------------------------------
 # Requirements
 
-* pulseaudio
-* libpulse-devel
-* libX11-devel
+* libX11-devel (required)
+* pipewire (default, 1.3 or higher)
+* pipewire-pulse (default, 1.3 or higher)
+* pipewire-devel (default, 1.3 or higher)
+* pulseaudio (1.2.4 or lower)
+* libpulse-devel (1.2.4 or lower)
 --------------------------------------------------------------------------
 
 **Note**: Until Dec 4, 2022, the sources used the euc-jp encoding. To use this encoding in Vim,

@@ -7,8 +7,8 @@ AM_CFLAGS	= ${CFLAGS} ${CPPFLAGS} ${X11_CFLAGS} ${PULSEAUDIO_CFLAGS}
 AM_CPPFLAGS	= -I${top_builddir} -I${top_srcdir}/src -I${top_srcdir}/
 
 # test this package library before doing an install
-DEPS   = ${top_builddir}/src/libkxl.la
-LDADDS = ${top_builddir}/src/libkxl.la
+DEPS   = ${top_builddir}/src/libKXL.la
+LDADDS = ${top_builddir}/src/libKXL.la
 
 noinst_PROGRAMS = check_foo sample
 

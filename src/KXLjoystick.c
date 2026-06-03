@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include "KXL.h"
 
-Sint32 KXL_joydev;
+int KXL_joydev;
 
 //==============================================================
 //  Open joystick device
@@ -16,7 +17,7 @@ Bool KXL_OpenJoystick(Uint8 *devname) {
   Uint8  axis = 2;
   Uint8  buttons = 2;
 
-  KXL_joydev = open(devname, O_RDONLY);
+  KXL_joydev = open(devname, O_RDONLY | O_NONBLOCK);
   if (KXL_joydev < 0) {
     fprintf(stderr, "KXL error message\nCannot open \"%s\".\n", devname);
     return False;
@@ -35,7 +36,7 @@ Bool KXL_OpenJoystick(Uint8 *devname) {
 //  Close joystick device
 //==============================================================
 void KXL_CloseJoystick(void) {
-  if (KXL_joydev == True) {
+  if (KXL_joydev >= 0) {
     close(KXL_joydev);
   }
 }
