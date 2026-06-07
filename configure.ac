@@ -111,13 +111,15 @@ if test x"$pipewire" = xyes; then
   # Prefer to build with pipewire instead of (obsolete) pulseaudio
   PKG_CHECK_MODULES([PIPEWIREAUDIO], [libpipewire-0.3 >= 0.3.19],,
     [AC_MSG_ERROR([Please install the libpipewire or lib64pipewire pulse development package, then try again])])
-  AC_DEFINE([USE_PIPIWIREAUDIO], [1], [libKXL Sound uses the Pipewire Pulseaudio module])
+  AC_DEFINE([USE_PIPEWIREAUDIO], [1], [libKXL Sound uses the Pipewire Pulseaudio module])
   pulseaudio=no
+  AC_CHECK_HEADERS(pipewire/pipewire.h)
 fi
 if test x"$pulseaudio" = xyes; then
   PKG_CHECK_MODULES([PULSEAUDIO], [libpulse-simple >= 14.2],,
     [AC_MSG_ERROR([Please install the libpulseaudio or lib64pulseaudio development package, then try again])])
   AC_DEFINE([USE_PULSEAUDIO], [1], [libKXL Sound uses the Pulseaudio pulse-simple module])
+  AC_CHECK_HEADERS(pulse/simple.h)
 fi
 AM_CONDITIONAL([USE_PIPEWIREAUDIO], [test x"$pipewire" = xyes])
 AC_SUBST([PIPEWIREAUDIO_CFLAGS])
@@ -126,11 +128,8 @@ AM_CONDITIONAL([USE_PULSEAUDIO], [test x"$pulseaudio" = xyes])
 AC_SUBST([PULSEAUDIO_CFLAGS])
 AC_SUBST([PULSEAUDIO_LIBS])
 
-dnl https://libcheck.github.io/check/
-PKG_CHECK_MODULES([CHECK], [check >= 0.9.10])
-
 dnl Checks for header files.
-AC_CONFIG_HEADERS([KXL-config.h])
+AC_CONFIG_HEADERS([src/KXL-config.h])
 AC_CHECK_HEADERS(fcntl.h malloc.h sys/ioctl.h sys/time.h)
 
 dnl Checks for library functions.

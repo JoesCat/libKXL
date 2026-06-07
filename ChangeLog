@@ -1,4 +1,4 @@
-Unreleased 1.2.5 [2026may28] Nathan Mills <Quipyowert2@users.noreply.github.com>
+Unreleased 1.3 [2026jun06] Nathan Mills <Quipyowert2@users.noreply.github.com>
 	- KXL_ReadBitmapHeader no longer loops indefinitely on corrupted BMPs.
 	- KXL_LoadBitmap and KXL_ReadBitmapHeader will fail instead of exiting your program.
 	- Documented KXL_ReadBitmapHeader.

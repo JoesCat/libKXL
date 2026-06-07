@@ -307,50 +307,57 @@ void KXL_DisplayName(const char *name)
 //            : title string
 //            : Event of X
 //==============================================================
-void KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event)
+int KXL_CreateWindow0(Uint16 w, Uint16 h, const char *title, uint32_t event)
 {
   XSizeHints sh;
 
-  // Allocate space for the window, ウィンドウ用の領域を確保する
-  KXL_Root = (KXL_Window *)KXL_Malloc(sizeof(KXL_Window));
-  KXL_Root->Display = NULL;
-  KXL_Root->Frame = NULL;
-  KXL_Root->WinFont = NULL;
-  KXL_Root->FontGC = NULL;
-  // Connect to X server
-  if (!(KXL_Root->Display = XOpenDisplay(KXL_DName))) {
-    fprintf(stderr, "KXL error message\nCannot open display\n");
-    exit(1);
+  if (w == 0 || h == 0) {
+    fprintf(stderr, "KXL error message\nBad dimensions [w=%d, h=%d]\n", w, h);
+    goto error_KXL_CreateWindow0;
   }
-  // Get screen no.
+
+  // Allocate space for the window root info, ウィンドウ用の領域を確保する
+  if ((KXL_Root = (KXL_Window *)calloc(1, sizeof(KXL_Window))) == NULL) {
+    fprintf(stderr, "KXL error message\nOut of memory!!\n");
+    goto error_KXL_CreateWindow0;
+  }
+  // Connect to X server
+  if ((KXL_Root->Display = XOpenDisplay(KXL_DName)) == NULL) {
+    fprintf(stderr, "KXL error message\nCannot open display\n");
+    goto error_KXL_CreateWindow1;
+  }
+  // Get the default screen no.
   KXL_Root->Scr  = DefaultScreen(KXL_Root->Display);
   // Get color map
   KXL_Root->Cmap = DefaultColormap(KXL_Root->Display, KXL_Root->Scr);
   // get bpp(bits per pixel)
   KXL_Root->Depth = DefaultDepth(KXL_Root->Display, KXL_Root->Scr);
-  // Support by 16, 24, 32
-  if (KXL_Root->Depth < 16) {
-    fprintf(stderr,
-            "KXL error message\n"
-            "%dbpp:%dbpp color not support.\n"
-            "Please 16 or 24 or 32bpp color",
-            KXL_Root->Depth, KXL_Root->Depth);
-    exit(1);
+  // Support for only 16, 24 or 32bpp
+  if (!(KXL_Root->Depth == 16 || KXL_Root->Depth == 24 || KXL_Root->Depth == 32)) {
+    fprintf(stderr, "KXL error message\n"
+            "%dbpp color not supported.\n"
+            "Please use a display with 16, 24, or 32bpp color\n",
+            KXL_Root->Depth);
+    goto error_KXL_CreateWindow2;
   }
   // Create window
   KXL_Root->Win = XCreateSimpleWindow(KXL_Root->Display,
-                                      RootWindow(KXL_Root->Display, 0),
+                                      RootWindow(KXL_Root->Display, KXL_Root->Scr),
                                       0, 0,
                                       w, h,
                                       0,
                                       WhitePixel(KXL_Root->Display, KXL_Root->Scr),
                                       BlackPixel(KXL_Root->Display, KXL_Root->Scr)
                                       );
+  if (KXL_Root->Win == 0) {
+    fprintf(stderr, "KXL error message\nCannot create window\n");
+    goto error_KXL_CreateWindow2;
+  }
   KXL_Root->Width  = w;
   KXL_Root->Height = h;
   // Set color map
   XSetWindowColormap(KXL_Root->Display, KXL_Root->Win, KXL_Root->Cmap);
-  // Set event
+  // Set event we want to handle (e.g., key press or window close)
   XSelectInput(KXL_Root->Display, KXL_Root->Win, event);
   // Set title bar
   XStoreName(KXL_Root->Display, KXL_Root->Win, title);
@@ -361,10 +368,10 @@ void KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event)
   sh.max_width  = w;
   sh.max_height = h;
   XSetWMNormalHints(KXL_Root->Display, KXL_Root->Win, &sh);
-  // Load font
+  // Load font (legacy X11 Logical Font Description (XLFD))
   KXL_Font("-adobe-courier-bold-r-normal--14-*-*-*-*-*-iso8859-1",
            0xff, 0xff, 0xff);
-  // Mapping window
+  // Map (make visible) window onto screen
   XMapWindow(KXL_Root->Display, KXL_Root->Win);
   XFlush(KXL_Root->Display);
   // Create frame
@@ -377,6 +384,20 @@ void KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event)
   if (!KXL_Root->DetectAutoRepeat) {
     XAutoRepeatOff(KXL_Root->Display);
   }
+  return 0;
+
+error_KXL_CreateWindow2:
+  XCloseDisplay(KXL_Root->Display);
+error_KXL_CreateWindow1:
+  KXL_Free(KXL_Root);
+error_KXL_CreateWindow0:
+  return -1;
+}
+// Deprecated, kept for backwards compatibility with older code
+void KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event)
+{
+  if (KXL_CreateWindow0(w, h, title, event))
+    exit(1);
 }
 
 //==============================================================
@@ -589,22 +610,24 @@ KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
   KXL_Image *new;
   XImage *img;
   GC gc8, gc1;
-  Visual *v = DefaultVisual(KXL_Root->Display, KXL_Root->Scr);
+  Visual *v;
 
   // Load bitmap header, ビットマップヘッダ読込み
-  KXL_ReadBitmapHeader(filename, &hed);
-  if (!hed.data)
-    return NULL;
+  if (KXL_ReadBitmapHeader0(filename, &hed))
+    goto error_KXL_LoadBitmap0;
   // Image size settings, イメージサイズ設定
-  new = (KXL_Image *)KXL_Malloc(sizeof(KXL_Image));
-  new->Width = hed.w;
+  if ((new = (KXL_Image *)malloc(sizeof(KXL_Image))) == NULL)
+    goto error_KXL_LoadBitmap1;
+  new->Width  = hed.w;
   new->Height = hed.height;
+
+  v = DefaultVisual(KXL_Root->Display, KXL_Root->Scr);
 
   // Convert an 8bps bitmap to 24 or 16bpp, 8bpsのビットマップを24 or 16bpp化する
   img = XCreateImage(KXL_Root->Display,
                      v,
                      KXL_Root->Depth,
-                     ZPixmap, 0, 0,
+                     ZPixmap, 0, NULL,
                      new->Width, new->Height,
                      BitmapPad(KXL_Root->Display), 0);
   img->data = KXL_Malloc(img->bytes_per_line * new->Height);
@@ -658,6 +681,18 @@ KXL_Image *KXL_LoadBitmap(const char *filename, Uint8 blend)
   KXL_Free(hed.rgb);
   KXL_Free(hed.data);
   return new;
+
+error_KXL_LoadBitmap1:
+  KXL_Free(hed.rgb);
+  KXL_Free(hed.data);
+  hed.magic[0] = hed.magic[1] = 0;
+  hed.file_size = 0;
+  hed.reserved1 = hed.reserved2 = 0;
+  hed.offset = hed.hed_size = hed.width = hed.height = 0;
+  hed.plane = hed.depth = 0;
+  hed.lzd = hed.image_size = hed.x_pixels = hed.y_pixels = hed.pals = hed.pals2 = 0;
+error_KXL_LoadBitmap0:
+  return NULL;
 }
 
 //==============================================================
@@ -688,10 +723,12 @@ void KXL_PutImage(KXL_Image *img, Sint16 x, Sint16 y)
 //==============================================================
 void KXL_DeleteImage(KXL_Image *img)
 {
-  XFreePixmap(KXL_Root->Display, img->Buffer);
-  XFreePixmap(KXL_Root->Display, img->Mask);
-  XFreeGC(KXL_Root->Display, img->MaskGC);
-  KXL_Free(img);
+  if (img != NULL) {
+    XFreePixmap(KXL_Root->Display, img->Buffer);
+    XFreePixmap(KXL_Root->Display, img->Mask);
+    XFreeGC(KXL_Root->Display, img->MaskGC);
+    KXL_Free(img);
+  }
 }
 
 //==============================================================

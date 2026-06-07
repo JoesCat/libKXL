@@ -16,14 +16,19 @@
 #include <pipewire/pipewire.h>
 #include <pulse/simple.h>
 #include <pulse/error.h>
-#endif
+#else
 #ifdef USE_PULSEAUDIO
 #include <pulse/simple.h>
 #include <pulse/error.h>
+#else
+#include <linux/soundcard.h>
+#endif
 #endif
 #include "KXL.h"
 
+#ifndef MIN
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#endif
 #define MAX_SOUNDS_PLAYING   16
 #define SND_BLOCK_SIZE      4096
 
@@ -63,14 +68,15 @@ typedef struct {
   Uint32  Length;
 } KXL_WaveList;
 
-KXL_WaveList *KXL_wavelist;
+KXL_WaveList *KXL_wavelist; // single user list
 
 Bool KXL_SoundOk;
+Bool KXL_SoundCard;
 
 //==============================================================
 // sound server, サウンドサーバー
 //==============================================================
-void KXL_SoundServer(void)
+static void KXL_SoundServer(void)
 {
   Uint16 i;
   KXL_SoundControl Command;
@@ -80,6 +86,9 @@ void KXL_SoundServer(void)
   Sint32 fragment_size = 4096;
   Sint32 arg;
   Uint8 *sample_ptr;
+
+  if (KXL_SoundCard == False)
+    return;
 
   // command initialize
   for (i = 0; i < MAX_SOUNDS_PLAYING; i ++)
@@ -94,9 +103,9 @@ void KXL_SoundServer(void)
   while (1) {
     FD_SET(KXL_SoundData.Pipe[0], &sound_fdset);
     select(KXL_SoundData.Pipe[0] + 1, &sound_fdset, NULL, NULL, NULL);
-    if (!FD_ISSET(KXL_SoundData.Pipe[0], &sound_fdset)) 
+    if (!FD_ISSET(KXL_SoundData.Pipe[0], &sound_fdset))
       continue;
-    if (read(KXL_SoundData.Pipe[0], &Command,sizeof(Command)) != sizeof(Command)) 
+    if (read(KXL_SoundData.Pipe[0], &Command,sizeof(Command)) != sizeof(Command))
       exit(-1);
     if (Command.Action == KXL_SOUND_STOP_ALL) { // all stop
       if (!KXL_SoundData.PlayCnt)
@@ -194,15 +203,15 @@ void KXL_SoundServer(void)
             KXL_SoundData.PBuff[i] = 0;
           else if (KXL_SoundData.LBuff[i] > 255)
             KXL_SoundData.PBuff[i] = 255;
-          else 
+          else
             KXL_SoundData.PBuff[i] = (KXL_SoundData.LBuff[i] >> 1) ^0x80;
         }
-#ifdef USE_PULSEAUDIO
+#ifdef USE_PIPEWIREAUDIO
         int error = 0;
         pa_simple_write(KXL_SoundData.Device, KXL_SoundData.PBuff, fragment_size, &error);
         if (error)
           fprintf(stderr, "KXL error message\nfailed to write sound data: %s\n", pa_strerror(error));
-        #else
+#else
 #ifdef USE_PULSEAUDIO
         int error = 0;
         pa_simple_write(KXL_SoundData.Device, KXL_SoundData.PBuff, fragment_size, &error);
@@ -215,7 +224,7 @@ void KXL_SoundServer(void)
       }
     }
   }
-  #ifdef USE_PIPEWIREAUDIO
+#ifdef USE_PIPEWIREAUDIO
   if (KXL_SoundData.Device) {
     int error;
     pa_simple_drain(KXL_SoundData.Device, &error);
@@ -243,6 +252,9 @@ void KXL_SoundServer(void)
 //==============================================================
 void KXL_PlaySound(Uint16 no, KXL_Command action)
 {
+  if (KXL_SoundCard == False || no >= KXL_SoundData.ListCnt)
+    return;
+
   KXL_SoundControl SendCommand;
 
   if (KXL_SoundOk == False)
@@ -267,76 +279,110 @@ void KXL_PlaySound(Uint16 no, KXL_Command action)
 // Arguments: directory, 引き数：ディレクトリ
 //          : file name, ファイル名
 //==============================================================
-KXL_WaveList KXL_LoadSound(const char *path, const char *fname)
+static KXL_WaveList KXL_LoadSound(const char *path, const char *fname)
 {
   KXL_WaveList new;
   char filename[PATH_MAX];
-  Uint32 length;
-  FILE *file;
-  Uint32 i;
   Uint8 dummy[40];
-  
+  FILE *file;
+  uint32_t i;
+
   snprintf(filename, sizeof(filename), "%s/%s.wav", path, fname);
   if ((file = fopen(filename,"r")) == NULL) {
     fprintf(stderr, "KXL error message\nKXL_LoadSound : '%s/%s.wav' open error\n",
             path, fname);
-    new.Data = 0;
-    return new;
+    goto error_KXL_LoadSound0;
   }
-  fread(dummy, sizeof(Uint8), 40, file);
-  new.Length = KXL_ReadU32(file);
-  new.Data = (Uint8 *)KXL_Malloc(new.Length);
-  fread(new.Data, sizeof(Uint8), new.Length, file);
+  if (fread(dummy, sizeof(Uint8), 40, file) != 40 || \
+    KXLread32(file, &new.Length))
+    goto error_KXL_LoadSound1;
+  if ((new.Data = (Uint8 *)malloc(new.Length)) == NULL)
+    goto error_KXL_LoadSound1;
+  if (fread(new.Data, sizeof(Uint8), new.Length, file) != new.Length)
+    goto error_KXL_LoadSound2;
   fclose(file);
   for (i = 0; i < new.Length; i ++) new.Data[i] ^= 0x80;
+  return new;
+
+error_KXL_LoadSound2:
+  free(new.Data);
+error_KXL_LoadSound1:
+  fclose(file);
+error_KXL_LoadSound0:
+  new.Data = NULL;
+  new.Length = 0;
   return new;
 }
 
 //==============================================================
-// Load sound file, サウンドファイル読み込み
-// Arguments: directory, 引き数：ディレクトリ
-//          : file name list, ファイル名リスト
+// Load sound files, サウンドファイル読み込み
+// Arguments: sound directory path, 引き数：ディレクトリ
+//          : file names list, ファイル名リスト
 //==============================================================
-void KXL_LoadSoundData(const char *path, char **fname)
+static KXL_WaveList *KXL_LoadSoundData(const char *path, char **fname)
 {
-  Uint16 i, max = 0;
-  
-  while (fname[max][0]) max ++;
-  KXL_wavelist = (KXL_WaveList *)KXL_Malloc(sizeof(KXL_WaveList ) * max);
-  for (i = 0; i < max; i ++)
-    KXL_wavelist[i] = KXL_LoadSound(path, fname[i]);
+  KXL_WaveList *MyList;
+  int i, max = 0;
+
+  while (fname[max][0]) max++;
+  if (max == 0 || max > MAX_SOUNDS_PLAYING || \
+    (MyList = (KXL_WaveList *)malloc(sizeof(KXL_WaveList) * max)) == NULL)
+    goto error_KXL_LoadSoundData0;
+
+  for (i = 0; i < max; i++) {
+    MyList[i] = KXL_LoadSound(path, fname[i]);
+    if (MyList[i].Length == 0)
+      goto error_KXL_LoadSoundData1;
+  }
   KXL_SoundData.ListCnt = max;
+  return MyList;
+
+error_KXL_LoadSoundData1:
+  while (i >= 0)
+    free(MyList[i--].Data);
+error_KXL_LoadSoundData0:
+  KXL_SoundData.ListCnt = 0;
+  return NULL;
 }
 
 //==============================================================
 // Sound server initialization, サウンドサーバー初期化
-// Arguments: directory, 引き数：ディレクトリ
-//          : file name list, ファイル名リスト
+// Arguments: sound directory path, 引き数：ディレクトリ
+//          : file names list, ファイル名リスト
 //==============================================================
 void KXL_InitSound(const char *path, char **fname)
 {
   Uint16 i = 0;
   KXL_SoundOk = False;
 
-  KXL_LoadSoundData(path, fname);
-  for (i = 0;i < KXL_SoundData.ListCnt;i++)
-    if (KXL_wavelist[i].Data == NULL)
-      return;
-#ifdef USE_PIPEWIREAUDIO
+  // First, load all Sound WAV files list into memory
+  if ((KXL_wavelist = KXL_LoadSoundData(path, fname)) == NULL)
+    return;
+
+  #ifdef USE_PIPEWIREAUDIO
+  KXL_SoundCard = True;
 #else
-#ifndef USE_PULSEAUDIO
-  // device check
+#ifdef USE_PULSEAUDIO
+  KXL_SoundCard = True;
+#else
+  // device check (/dev/dsp)
   // Open the sound device in non-blocking mode, because ALSA's OSS
   // emulation and some broken OSS drivers would make a blocking call
   // wait forever until the device is available. Since this breaks the
   // OSS spec, we immediately put it back to blocking mode if the
   // operation was successful.
+  KXL_SoundCard = False;
   KXL_SoundData.Device = open("/dev/dsp", O_WRONLY|O_NDELAY);
   if (KXL_SoundData.Device < 0) {
-    fprintf(stderr, "KXL error message\ncould not open sound card (%s)\n",
-            strerror(errno));
+    // make an exception if there is no /dev/dsp soundcard directory
+    if (errno == 2)
+      KXL_SoundOk = True;
+    else
+      fprintf(stderr, "KXL error message\ncould not open sound card (%s)\n",
+              strerror(errno));
     return;
   }
+  KXL_SoundCard = True;
   fcntl(KXL_SoundData.Device, F_SETFL,
         fcntl(KXL_SoundData.Device, F_GETFL) &~ FNDELAY);
 #endif
@@ -361,15 +407,16 @@ void KXL_InitSound(const char *path, char **fname)
     ss.rate = 8000;
     int error = 0;
     // device check
-    KXL_SoundData.Device = pa_simple_new(NULL,
-                                         "Geki2",
-                                         PA_STREAM_PLAYBACK,
-                                         NULL,
-                                         "Music",
-                                         &ss,
-                                         NULL,
-                                         NULL,
-                                         &error
+    KXL_SoundData.Device = pa_simple_new(
+        NULL,               // Server name (or NULL for default)
+        "KXL Game",         // Application name (descriptive name)
+        PA_STREAM_PLAYBACK, // Stream direction (PLAYBACK or RECORD)
+        NULL,               // Device name (or NULL for default)
+        "Music",            // Stream description
+        &ss,                // Sample format specifications (rate, channels)
+        NULL,               // Channel map (or NULL for default)
+        NULL,               // Buffering attributes (or NULL for default)
+        &error              // Returns error code on failure
     );
     if (!KXL_SoundData.Device || error) {
       fprintf(stderr, "KXL error message\nnot found sound card\n");
@@ -383,16 +430,17 @@ void KXL_InitSound(const char *path, char **fname)
     ss.rate = 8000;
     int error = 0;
     // device check
-    KXL_SoundData.Device = pa_simple_new(NULL,
-                                         "Geki2",
-                                         PA_STREAM_PLAYBACK,
-                                         NULL,
-                                         "Music",
-                                         &ss,
-                                         NULL,
-                                         NULL,
-                                         &error
-                                         );
+    KXL_SoundData.Device = pa_simple_new(
+        NULL,               // Server name (or NULL for default)
+        "KXL Game",         // Application name (descriptive name)
+        PA_STREAM_PLAYBACK, // Stream direction (PLAYBACK or RECORD)
+        NULL,               // Device name (or NULL for default)
+        "Music",            // Stream description
+        &ss,                // Sample format specifications (rate, channels)
+        NULL,               // Channel map (or NULL for default)
+        NULL,               // Buffering attributes (or NULL for default)
+        &error              // Returns error code on failure
+    );
     if (!KXL_SoundData.Device || error) {
       fprintf(stderr, "KXL error message\nnot found sound card\n");
       return;
@@ -412,9 +460,12 @@ void KXL_InitSound(const char *path, char **fname)
 //==============================================================
 void KXL_EndSound(void)
 {
+#ifdef USE_PIPEWIREAUDIO
+#else
 #ifdef USE_PULSEAUDIO
 #else
-#ifndef USE_PULSEAUDIO
+  if (KXL_SoundCard == False)
+    goto KXL_EndSound_freefiles;
   if (KXL_SoundData.Device != -1)
     close(KXL_SoundData.Device);
 #endif
@@ -430,7 +481,9 @@ void KXL_EndSound(void)
     else
       fprintf(stderr, "KXL error message\nsound server terminated abnormally");
   }
+
+KXL_EndSound_freefiles:
   while (KXL_SoundData.ListCnt)
-    KXL_Free(KXL_wavelist[-- KXL_SoundData.ListCnt].Data);
+    KXL_Free(KXL_wavelist[--KXL_SoundData.ListCnt].Data);
   KXL_Free(KXL_wavelist);
 }

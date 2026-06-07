@@ -10,22 +10,23 @@ AM_CPPFLAGS	= -I${top_builddir} -I${top_srcdir}/src -I${top_srcdir}/
 DEPS   = ${top_builddir}/src/libKXL.la
 LDADDS = ${top_builddir}/src/libKXL.la
 
-noinst_PROGRAMS = check_foo sample
+noinst_PROGRAMS = test_01 test_02 sample
 
-TESTS = check_foo sample
-check_PROGRAMS    = check_foo
-check_foo_SOURCES = test_001.c
-check_foo_CFLAGS  = @CHECK_CFLAGS@ --coverage
-check_foo_LDADD   = @CHECK_LIBS@ ${LDADDS}
-check_foo_LDFLAGS = --coverage
+TESTS = test_01 test_02 sample
+
+test_01_SOURCES = test_01.c
+test_01_LDADD = ${LDADDS}
+
+test_02_SOURCES = test_02.c
+test_02_LDADD = ${LDADDS}
 
 sample_SOURCES = sample.c
 sample_LDADD   = ${LDADDS}
 
-EXTRA_DIST = sample.c test_001.c test_bmp_PXIpZM
-nodist_EXTRA_DATA = .deps .libs check* test_001 \
+EXTRA_DIST = sample.c test_01.c test_02.c test_bmp_PXIpZM
+nodist_EXTRA_DATA = .deps .libs test_01 test_02 \
   sample sample.bc sample.o test-suite.log
 
 clean-local:
-	rm -f ${builddir}/check* ${builddir}/test001 \
+	rm -f ${builddir}/test_01 ${builddir}/test_02 \
 	${builddir}/sample ${builddir}/sample.bc ${builddir}/sample.o

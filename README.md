@@ -2,8 +2,6 @@
 		Copyright (C) 2001, Katsuyoshi Sato
 			fc3srx7@mwnet.or.jp
 
-[![Coverage Status](https://coveralls.io/repos/github/Quipyowert2/libKXL/badge.svg?branch=master)](https://coveralls.io/github/Quipyowert2/libKXL?branch=master)
-
 KXL (Kacchan X Windows System Library) is a multimedia library targeted at
 game development that provides functions for simple image and sound output
 as well as higher level functions for text drawing, timer and events
@@ -30,12 +28,24 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 --------------------------------------------------------------------------
 
-# Install
+# Install 32bit
 ```bash
 cd libKXL
 autoreconf -i
 automake
 ./configure
+make
+make check
+sudo make install
+```
+
+# Install 64bit
+libpaths might not be set correctly, so it is suggested to use.
+```bash
+cd libKXL
+autoreconf -i
+automake
+./configure --prefix=/usr --libdir=/usr/lib64
 make
 make check
 sudo make install

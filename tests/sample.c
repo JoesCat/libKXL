@@ -6,7 +6,7 @@ int main(int argc, char** argv)
   Bool flag = True;
 
   // Create a window by 100x100.
-  // event receives only the bottom of a re-drawing event and key presss.
+  // event receives only the bottom of a re-drawing event and key press.
   // If return key is pushed, it will end.
   KXL_CreateWindow(100, 100, "sample",
                    KXL_EVENT_EXPOSURE_MASK |

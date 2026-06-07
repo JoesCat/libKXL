@@ -5,6 +5,10 @@
 #include <sys/time.h>
 #include "KXL.h"
 
+#if defined(_LP64) || defined(__LP64__)
+#define _FILE_OFFSET_BITS 64 // Enable 64-bit offsets for large file support
+#endif
+
 Bool KXL_TimerFlag;
 
 // 360 degree data, 360度データ
@@ -130,6 +134,7 @@ void *KXL_Realloc(void *src, Uint32 size)
 void KXL_Free(void *src)
 {
   free(src);
+  src = NULL;
 }
 
 //==============================================================
@@ -185,10 +190,38 @@ void KXL_GetDirectionAdd(Sint16 dir, Sint16 *x, Sint16 *y) {
 }
 
 //==============================================================
+// 8-bit file reading, with file error check
+//==============================================================
+int KXLread8(FILE *fp, uint8_t *p)
+{
+  uint8_t c;
+
+  if ((c = fgetc(fp)) >= 0) {
+    *p = (uint8_t)(c);
+    return 0;
+  }
+  *p = 0;
+  return -1;
+}
+
+//==============================================================
 // 16-bit little-endian reading, １６リトルビットエンディアン読み込み
 // Arguments: File pointer, 引き数：ファイルポインタ
 // Return value: 16-bit value, 戻り値：１６ビット値
 //==============================================================
+int KXLread16(FILE *fp, uint16_t *p)
+{
+  uint8_t c[2];
+
+  if (fread(c, 1, 2, fp) == 2) {
+    *p = (uint16_t)(c[1]<<8 | c[0]);
+    return 0;
+  }
+  *p = 0;
+  return -1;
+}
+
+// Deprecated, kept for backwards compatibility with older code
 Uint16 KXL_ReadU16(FILE *fp)
 {
   uint8_t c[2];
@@ -202,6 +235,19 @@ Uint16 KXL_ReadU16(FILE *fp)
 // Arguments: File pointer, 引き数：ファイルポインタ
 // Return value: 32-bit value, 戻り値：３２ビット値
 //==============================================================
+int KXLread32(FILE *fp, uint32_t *p)
+{
+  uint8_t c[4];
+
+  if (fread(c, 1, 4, fp) == 4) {
+    *p = (uint32_t)(c[3]<<24 | c[2]<<16 |c[1]<<8 | c[0]);
+    return 0;
+  }
+  *p = 0;
+  return -1;
+}
+
+// Deprecated, kept for backwards compatibility with older code
 Uint32 KXL_ReadU32(FILE *fp)
 {
   uint8_t c[4];

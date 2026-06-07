@@ -248,11 +248,16 @@ void        KXL_Put_StretchImage(KXL_Image *img, Uint16 src_l, Uint16 src_t, Uin
 void        KXL_CreateBitmap8to16(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 blend);
 void        KXL_CreateBitmap8to24(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 blend);
 void        KXL_CreateBitmap8to1(Uint8 *from, XImage *to, Uint8 blend);
+int         KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed);
+int         KXLread8(FILE *fp, uint8_t *p);
+int         KXLread16(FILE *fp, uint16_t *p);
+int         KXLread32(FILE *fp, uint32_t *p);
+// Deprecated, kept for backwards compatibility with older code
 void        KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed);
 Uint16      KXL_ReadU16(FILE *fp);
 Uint32      KXL_ReadU32(FILE *fp);
 #define     KXL_ReadS16 (Sint16)KXL_ReadU16
-#define     KXL_ReadS32 (Sint32)KXL_ReadU16
+#define     KXL_ReadS32 (Sint32)KXL_ReadU32
 
 //================================================================
 // Global function prototypes
@@ -262,8 +267,10 @@ Uint32      KXL_ReadU32(FILE *fp);
 //================================================================
 // Window functions
 void        KXL_DisplayName(const char *name);
-void        KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event);
+int         KXL_CreateWindow0(Uint16 w, Uint16 h, const char *title, uint32_t event);
 void        KXL_DeleteWindow(void);
+// Deprecated, kept for backwards compatibility with older code
+void        KXL_CreateWindow(Uint16 w, Uint16 h, const char *title, Uint32 event);
 // Frame functions
 void        KXL_ReSizeFrame(Uint16 w, Uint16 h);
 #define     KXL_UpDateRect(rr) KXL_Up_Date(rr.Left, rr.Top, rr.Width, rr.Height)
