@@ -194,10 +194,10 @@ void KXL_GetDirectionAdd(Sint16 dir, Sint16 *x, Sint16 *y) {
 //==============================================================
 int KXLread8(FILE *fp, uint8_t *p)
 {
-  uint8_t c;
+  int c;
 
   if ((c = fgetc(fp)) >= 0) {
-    *p = (uint8_t)(c);
+    *p = (uint8_t)(c & 0xff);
     return 0;
   }
   *p = 0;
