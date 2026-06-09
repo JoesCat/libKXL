@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include "KXL.h"
+#include "KXL-config.h"
 
 #if defined(_LP64) || defined(__LP64__)
 #define _FILE_OFFSET_BITS 64 // Enable 64-bit offsets for large file support
@@ -191,37 +192,44 @@ void KXL_GetDirectionAdd(Sint16 dir, Sint16 *x, Sint16 *y) {
 
 //==============================================================
 // 8-bit file reading, with file error check
+// Arguments: File pointer, errno, value
+// Return value: errno, 8-bit value
 //==============================================================
-int KXLread8(FILE *fp, uint8_t *p)
+int KXLread8(FILE *fp, int *fe, uint8_t *p)
 {
-  int c;
+  int e;
 
-  if ((c = fgetc(fp)) >= 0) {
-    *p = (uint8_t)(c & 0xff);
+  if ((e = fread(p, 1, 1, fp)) == 1) {
+    *fe = 0;
     return 0;
   }
-  *p = 0;
+  *fe = e;
   return -1;
 }
 
 //==============================================================
 // 16-bit little-endian reading, １６リトルビットエンディアン読み込み
-// Arguments: File pointer, 引き数：ファイルポインタ
-// Return value: 16-bit value, 戻り値：１６ビット値
+// Arguments: File pointer, errno, value
+// Return value: errno, 16-bit value
 //==============================================================
-int KXLread16(FILE *fp, uint16_t *p)
+int KXLread16(FILE *fp, int *fe, uint16_t *p)
 {
+  int e;
   uint8_t c[2];
 
-  if (fread(c, 1, 2, fp) == 2) {
+  if ((e = fread(c, 1, 2, fp)) == 2) {
     *p = (uint16_t)(c[1]<<8 | c[0]);
+    *fe = 0;
     return 0;
   }
   *p = 0;
+  *fe = e;
   return -1;
 }
 
 // Deprecated, kept for backwards compatibility with older code
+// Arguments: File pointer, 引き数：ファイルポインタ
+// Return value: 16-bit value, 戻り値：１６ビット値
 Uint16 KXL_ReadU16(FILE *fp)
 {
   uint8_t c[2];
@@ -232,22 +240,27 @@ Uint16 KXL_ReadU16(FILE *fp)
 
 //==============================================================
 // 32-bit little-endian read, ３２ビットリトルエンディアン読み込み
-// Arguments: File pointer, 引き数：ファイルポインタ
-// Return value: 32-bit value, 戻り値：３２ビット値
+// Arguments: File pointer, errno, value
+// Return value: errno, 32-bit value
 //==============================================================
-int KXLread32(FILE *fp, uint32_t *p)
+int KXLread32(FILE *fp, int *fe, uint32_t *p)
 {
+  int e;
   uint8_t c[4];
 
-  if (fread(c, 1, 4, fp) == 4) {
+  if ((e = fread(c, 1, 4, fp)) == 4) {
     *p = (uint32_t)(c[3]<<24 | c[2]<<16 |c[1]<<8 | c[0]);
+    *fe = 0;
     return 0;
   }
   *p = 0;
+  *fe = e;
   return -1;
 }
 
 // Deprecated, kept for backwards compatibility with older code
+// Arguments: File pointer, 引き数：ファイルポインタ
+// Return value: 32-bit value, 戻り値：３２ビット値
 Uint32 KXL_ReadU32(FILE *fp)
 {
   uint8_t c[4];

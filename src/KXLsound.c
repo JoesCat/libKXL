@@ -1,5 +1,5 @@
 #include <stdlib.h> // for exit
-#include <string.h> // for memset, memcpy
+#include <string.h> // for memset, memcpy, strerr
 #include <unistd.h> // for pipe, close
 #include <stdio.h>
 #include <signal.h>
@@ -286,6 +286,7 @@ static KXL_WaveList KXL_LoadSound(const char *path, const char *fname)
   Uint8 dummy[40];
   FILE *file;
   uint32_t i;
+  int fe = 0;
 
   snprintf(filename, sizeof(filename), "%s/%s.wav", path, fname);
   if ((file = fopen(filename,"r")) == NULL) {
@@ -293,12 +294,12 @@ static KXL_WaveList KXL_LoadSound(const char *path, const char *fname)
             path, fname);
     goto error_KXL_LoadSound0;
   }
-  if (fread(dummy, sizeof(Uint8), 40, file) != 40 || \
-    KXLread32(file, &new.Length))
+  if ((fe = fread(dummy, sizeof(Uint8), 40, file)) != 40 || \
+    KXLread32(file, &fe, &new.Length))
     goto error_KXL_LoadSound1;
   if ((new.Data = (Uint8 *)malloc(new.Length)) == NULL)
     goto error_KXL_LoadSound1;
-  if (fread(new.Data, sizeof(Uint8), new.Length, file) != new.Length)
+  if ((fe = fread(new.Data, sizeof(Uint8), new.Length, file)) != new.Length)
     goto error_KXL_LoadSound2;
   fclose(file);
   for (i = 0; i < new.Length; i ++) new.Data[i] ^= 0x80;
@@ -311,6 +312,9 @@ error_KXL_LoadSound1:
 error_KXL_LoadSound0:
   new.Data = NULL;
   new.Length = 0;
+  if (fe < 0)
+    fprintf(stderr, "KXL error message\nKXL_LoadSound : '%s/%s.wav' error (%s)\n",
+            path, fname, strerror(fe));
   return new;
 }
 

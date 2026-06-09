@@ -1,5 +1,6 @@
 // sample.c
 #include <KXL.h>
+#include "KXL-config.h" // included here for internal testing use only
 
 int main(int argc, char** argv)
 {

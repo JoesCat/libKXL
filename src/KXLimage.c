@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h> // for exit
+#include <string.h> // for memset, memcpy, strerr
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "KXL.h"
+#include "KXL-config.h"
 
 #if defined(_LP64) || defined(__LP64__)
 #define _FILE_OFFSET_BITS 64 // Enable 64-bit offsets for large file support
@@ -111,9 +113,11 @@ int KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed)
   FILE *fp;
   struct stat st;
   Bool stat_ok = 0;
-  int fd, data;
+  int fd, fe;
   Uint16 i, j;
-//  uint8_t data;
+  uint8_t data;
+
+  fe = 0;
 
   // Open file in read-only mode, ファイルを読み込み専用で開く
   if ((fp = fopen(filename,"rb")) == NULL) {
@@ -133,21 +137,21 @@ int KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed)
     fprintf(stderr, "KXL error message\n'%s' is not a bitmap file\n", filename);
     goto error_KXL_ReadBitmapHeader1;
   }
-  if (KXLread32(fp, &hed->file_size)  || \
-      KXLread16(fp, &hed->reserved1)  || \
-      KXLread16(fp, &hed->reserved2)  || \
-      KXLread32(fp, &hed->offset)     || \
-      KXLread32(fp, &hed->hed_size)   || \
-      KXLread32(fp, &hed->width)      || \
-      KXLread32(fp, &hed->height)     || \
-      KXLread16(fp, &hed->plane)      || \
-      KXLread16(fp, &hed->depth)      || \
-      KXLread32(fp, &hed->lzd)        || \
-      KXLread32(fp, &hed->image_size) || \
-      KXLread32(fp, &hed->x_pixels)   || \
-      KXLread32(fp, &hed->y_pixels)   || \
-      KXLread32(fp, &hed->pals)       || \
-      KXLread32(fp, &hed->pals2)) {
+  if (KXLread32(fp, &fe, &hed->file_size)  || \
+      KXLread16(fp, &fe, &hed->reserved1)  || \
+      KXLread16(fp, &fe, &hed->reserved2)  || \
+      KXLread32(fp, &fe, &hed->offset)     || \
+      KXLread32(fp, &fe, &hed->hed_size)   || \
+      KXLread32(fp, &fe, &hed->width)      || \
+      KXLread32(fp, &fe, &hed->height)     || \
+      KXLread16(fp, &fe, &hed->plane)      || \
+      KXLread16(fp, &fe, &hed->depth)      || \
+      KXLread32(fp, &fe, &hed->lzd)        || \
+      KXLread32(fp, &fe, &hed->image_size) || \
+      KXLread32(fp, &fe, &hed->x_pixels)   || \
+      KXLread32(fp, &fe, &hed->y_pixels)   || \
+      KXLread32(fp, &fe, &hed->pals)       || \
+      KXLread32(fp, &fe, &hed->pals2)) {
     fprintf(stderr, "KXL error message\n'%s' cannot read bitmap file header\n", filename);
     goto error_KXL_ReadBitmapHeader1;
   }
@@ -198,10 +202,10 @@ int KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed)
     goto error_KXL_ReadBitmapHeader1;
   }
   for (i = 0; i < hed->pals; i ++) {
-    if (KXLread8(fp, &hed->rgb[i].b) || \
-        KXLread8(fp, &hed->rgb[i].g) || \
-        KXLread8(fp, &hed->rgb[i].r) || \
-        KXLread8(fp, &hed->rgb[i].e)) {
+    if (KXLread8(fp, &fe, &hed->rgb[i].b) || \
+        KXLread8(fp, &fe, &hed->rgb[i].g) || \
+        KXLread8(fp, &fe, &hed->rgb[i].r) || \
+        KXLread8(fp, &fe, &hed->rgb[i].e)) {
       fprintf(stderr, "KXL error message\n'%s' bitmap RGB missing or truncated\n", filename);
       goto error_KXL_ReadBitmapHeader2;
 
@@ -247,7 +251,7 @@ int KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed)
 #else
       if ((fseek(fp, (hed->offset + (hed->height - i - 1) * hed->w), 0) < 0) ||
 #endif
-          (fread(&(hed->data[i * hed->w]), hed->w, 1, fp) != 1)) {
+          ((fe = fread(&(hed->data[i * hed->w]), hed->w, 1, fp)) != 1)) {
         fprintf(stderr, "KXL error message\n'%s' bitmap image read error\n", filename);
         goto error_KXL_ReadBitmapHeader3;
       }
@@ -259,7 +263,10 @@ int KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed)
       // Load from the last line, 最終ラインから読み込む
       fseek(fp, hed->offset + (hed->height - i - 1) * w, 0);
       for (j = 0; j < w; j ++) {
-        data = fgetc(fp);
+        if (KXLread8(fp, &fe, &data)) {
+          fprintf(stderr, "KXL error message\n'%s' bitmap image read error\n", filename);
+          goto error_KXL_ReadBitmapHeader3;
+        }
         hed->data[i * hed->w + j * 2 + 0] = data >> 4;
         hed->data[i * hed->w + j * 2 + 1] = data & 0x0f;
       }
@@ -284,6 +291,9 @@ error_KXL_ReadBitmapHeader0:
   hed->lzd = hed->image_size = hed->x_pixels = hed->y_pixels = hed->pals = hed->pals2 = 0;
   hed->data = NULL;
   hed->rgb = NULL;
+  if (fe)
+    fprintf(stderr, "KXL error message\n'%s' file read error (%s)\n",
+            filename, strerror(fe));
   return -1;
 }
 

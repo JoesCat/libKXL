@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "KXL.h"
-#include "KXL-config.h"
+#include "KXL-config.h" // included here for internal testing use only
 
 extern KXL_Window *KXL_Root;
 

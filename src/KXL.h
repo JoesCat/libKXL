@@ -249,9 +249,9 @@ void        KXL_CreateBitmap8to16(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 
 void        KXL_CreateBitmap8to24(Uint8 *from, XImage *to, KXL_RGBE *rgb, Uint8 blend);
 void        KXL_CreateBitmap8to1(Uint8 *from, XImage *to, Uint8 blend);
 int         KXL_ReadBitmapHeader0(const char *filename, KXL_BitmapHeader *hed);
-int         KXLread8(FILE *fp, uint8_t *p);
-int         KXLread16(FILE *fp, uint16_t *p);
-int         KXLread32(FILE *fp, uint32_t *p);
+int         KXLread8(FILE *fp, int *fe, uint8_t *p);
+int         KXLread16(FILE *fp, int *fe, uint16_t *p);
+int         KXLread32(FILE *fp, int *fe, uint32_t *p);
 // Deprecated, kept for backwards compatibility with older code
 void        KXL_ReadBitmapHeader(const char *filename, KXL_BitmapHeader *hed);
 Uint16      KXL_ReadU16(FILE *fp);
